@@ -61,9 +61,16 @@ display_board() {
 begin_game() {
     move_index=0  # Initialize move index
 
+    initialize_board
+    display_board
+
 while true; do
     echo "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit:"
-    read -n 1 -s key
+    read -rsn1 key
+    if [[ $key == $'\e' ]]; then
+        read -rsn2 key # read the rest of the escape sequence
+        key="$key"
+    fi
     case $key in
         d)
             if (( move_index < ${#moves[@]} )); then
@@ -169,21 +176,19 @@ move_piece() {
         if [[ -n "$promotion" ]]; then
             if [[ $from_x -ge 6 ]]; then
                 # White promotion
-                to_row[$to_y]=$(echo "$promotion" | tr 'a-z' 'A-Z')
+                to_row[$to_y]=$(echo "$promotion" | tr 'A-Z' 'a-z')
+                echo "White Promotion"
             else
                 # Black promotion
-                to_row[$to_y]=$(echo "$promotion" | tr 'A-Z' 'a-z')
+                echo "$promotion"
+                to_row[$to_y]=$(echo "$promotion" | tr 'a-z' 'A-Z')
+                echo "Black Promotion"
             fi
         else
             if [[ $from_x -eq $to_x ]]; then
                 to_row[$from_y]="."
             fi
             to_row[$to_y]=$piece
-        fi
-
-        # Handle promotion
-        if [[ -n "$promotion" ]]; then
-            to_row[$to_y]=$(echo "$promotion" | tr 'a-z' 'A-Z')  # Assuming promotion is to a queen
         fi
 
         # Update the board with the new rows
@@ -226,7 +231,5 @@ save_game_moves "$game_file"
 moves=$(parse_moves)
 moves=($moves)  # Convert string to array
 
-initialize_board
-display_board
 
 begin_game
