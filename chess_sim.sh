@@ -63,7 +63,7 @@ show_chess_board() {
     echo "  a b c d e f g h"
     for ((i=0; i<8; i++)); do
         row=${board[i]}
-        echo "$((8-i)) $row $((8-i))"
+        echo "$((8-i)) $row  $((8-i))"
     done
     echo "  a b c d e f g h"
 }
@@ -75,8 +75,10 @@ handle_game() {
     show_chess_board
 
     while true; do
-        echo "Press 'd' for next move, 'a' for previous move, 'w' for start, 's' for end, 'q' to quit:"
+        echo -n "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit: "
         read -rsn1 key
+        # Display the pressed key
+        echo "$key"
         if [[ $key == $'\e' ]]; then
             read -rsn2 key
             key="$key"
@@ -112,6 +114,7 @@ handle_game() {
                 ;;
             q)
                 echo "Exiting."
+                echo "End of game."
                 exit 0
                 ;;
             *)
