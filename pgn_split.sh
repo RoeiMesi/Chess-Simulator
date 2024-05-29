@@ -1,4 +1,6 @@
 #!/bin/bash
+# Name: Roei Mesilaty
+# ID: 315253336
 
 print_usage_message() {
     echo "Usage: $0 <source_pgn_file> <destination_directory>"
@@ -26,7 +28,8 @@ split_pgn_file() {
     output_dir="$2"
     game_count=0
     game_content=""
-    base_name=$(basename "$input_file" .pgn)  # Extract the base name of the input file without the extension
+    # Extract the base name of the input file without the extension
+    base_name=$(basename "$input_file" .pgn)
 
     while IFS= read -r line; do
         # This 'if' will stop once it sees a new [Event], meaning it needs to finish with the current event and proceed to the next one.

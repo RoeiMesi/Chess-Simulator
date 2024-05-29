@@ -1,3 +1,4 @@
+// Name: Roei Mesilaty, ID: 315253336
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,66 +6,82 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#define MAX_LENGTH 1024
-#define MAX_ARGS 64
-#define MAX_HISTORY 100
-    
-    char* command_history[MAX_HISTORY]; // Array to store history of commands
-    int history_count = 0;              // Count of commands stored in history
+#define MAX_CMD_LEN 1024
+#define MAX_ARGS 100
+#define HISTORY_LIMIT 100
 
-void display_prompt() {
+// Array to store history of commands
+char* history[HISTORY_LIMIT];
+// Number of commands stored in history
+int history_index = 0;
+
+// Function to display the shell prompt
+void print_prompt() {
     printf("$ ");
-    fflush(stdout); // Ensure that the prompt is displayed immediately
+    fflush(stdout);
 }
 
-void change_directory(char* path) {
-    if (!path) {
-        printf("Expected path after cd, but nothing was inserted.\n");
+// Function to change the current working directory
+void change_dir(char* path) {
+    if (path == NULL) {
+        fprintf(stderr, "cd: argument required\n");
+    } else if (chdir(path) != 0) {
+        perror("chdir error");
     }
-    else {
-        if (chdir(path) != 0) { // If changing directory has failed, print error chdir.
-            perror("chdir");
-        }
-    }
-
 }
 
-void add_to_history(char* command) {
-    if (history_count < MAX_HISTORY) {
-        command_history[history_count] = malloc(strlen(command) + 1);
-        if (!command_history[history_count]) {
-            perror("Memory allocation failed");
+// Function to add a command to the history
+void add_history(char* cmd) {
+    if (history_index < HISTORY_LIMIT) {
+        history[history_index] = strdup(cmd);
+        if (history[history_index] == NULL) {
+            perror("strdup error");
             exit(EXIT_FAILURE);
         }
-        strcpy(command_history[history_count], command); // Copy the string.
-        history_count++;
+        history_index++;
     } else {
-        free(command_history[0]);
-        for (int i = 1; i < MAX_HISTORY; i++) {
-            command_history[i - 1] = command_history[i];
+        // Remove the oldest command when history is full
+        free(history[0]);
+        for (int i = 1; i < HISTORY_LIMIT; i++) {
+            history[i - 1] = history[i];
         }
-        command_history[MAX_HISTORY - 1] = malloc(strlen(command) + 1); // Allocate memory for new command
-        if (!command_history[MAX_HISTORY -1]){
-            perror("Memory allocation failed");
+        history[HISTORY_LIMIT - 1] = strdup(cmd);
+        if (history[HISTORY_LIMIT - 1] == NULL) {
+            perror("strdup error");
             exit(EXIT_FAILURE);
         }
-            strcpy(command_history[MAX_HISTORY - 1], command); // Copy new command
     }
 }
 
-void display_history() {
-    for (int i = 0; i < history_count; i++) {
-        printf("%d %s", i+1, command_history[i]);
+// Function to display the command history
+void show_history() {
+    for (int i = 0; i < history_index; i++) {
+        printf("%d %s", i + 1, history[i]);
     }
 }
 
-char** parse_command(char* input) {
+// Function to print the current working directory
+void print_current_dir() {
+    char cwd[MAX_CMD_LEN];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("%s\n", cwd);
+    } else {
+        perror("getcwd error");
+    }
+}
+
+// Function to parse the input command into arguments
+char** tokenize_command(char* cmd) {
     char** args = malloc(MAX_ARGS * sizeof(char*));
+    if (!args) {
+        perror("malloc error");
+        exit(EXIT_FAILURE);
+    }
     char* token;
     int index = 0;
 
-    token = strtok(input, " \n");
-    while (token != NULL && index < MAX_ARGS -1) {
+    token = strtok(cmd, " \n");
+    while (token != NULL && index < MAX_ARGS - 1) {
         args[index++] = token;
         token = strtok(NULL, " \n");
     }
@@ -72,56 +89,76 @@ char** parse_command(char* input) {
     return args;
 }
 
-void execute_command(char** args) {
+// Function to execute a command
+void run_command(char** args, char** search_paths, int path_count) {
     pid_t pid = fork();
     if (pid < 0) {
+        perror("fork error");
         exit(EXIT_FAILURE);
-    }
-    else if (pid == 0) {
-        /* Child process */
+    } else if (pid == 0) {
         execvp(args[0], args);
-        perror("Failed to execute command."); // This line is reached if the exec did not work properly.
+
+        // Search for the executable in custom paths
+        for (int i = 0; i < path_count; i++) {
+            char cmd_path[MAX_CMD_LEN];
+            snprintf(cmd_path, sizeof(cmd_path), "%s/%s", search_paths[i], args[0]);
+            execv(cmd_path, args);
+        }
+
+        perror("exec error");
         exit(EXIT_FAILURE);
-    }
-    else { // Parent Process
+    } else {
+        // Parent process waits for the child to complete
         int status;
-        waitpid(pid, &status, 0); // This will make the parent wait until the child process is finished.
+        if (waitpid(pid, &status, 0) < 0) {
+            perror("waitpid error");
+        }
     }
 }
 
-int main() {
-    char input[MAX_LENGTH];
+int main(int argc, char *argv[]) {
+    char input[MAX_CMD_LEN];
     char** args;
-    int i = 0;
+
+    // Array to hold paths passed as arguments
+    char* search_paths[MAX_ARGS];
+    int path_count = 0;
+
+    // Store the provided directories in search_paths
+    for (int i = 1; i < argc; i++) {
+        search_paths[path_count++] = argv[i];
+    }
 
     while (1) {
-        display_prompt();
-        if (fgets(input, MAX_LENGTH, stdin) == NULL) break; // Handle EOF (Ctrl+D)
-        if (strcmp(input, "\n") == 0){
-            continue; // Ignore empty commands
-        }
-        add_to_history(input);
+        print_prompt();
+        if (fgets(input, MAX_CMD_LEN, stdin) == NULL) break;
+        if (strcmp(input, "\n") == 0) continue;
 
-        args = parse_command(input);
-        if (strcmp(args[0], "exit") == 0)
-            break; // Exit command to stop the shell
-        else if (strcmp(args[0], "cd") == 0) {
-            change_directory(args[1]);
+        add_history(input);
+        args = tokenize_command(input);
+        if (args[0] == NULL) {
             free(args);
             continue;
         }
-        else if (strcmp(args[0], "history") == 0) {
-            display_history();
+        if (strcmp(args[0], "exit") == 0) {
             free(args);
+            break;
+        } else if (strcmp(args[0], "cd") == 0) {
+            change_dir(args[1]);
+        } else if (strcmp(args[0], "history") == 0) {
+            show_history();
+        } else if (strcmp(args[0], "pwd") == 0) {
+            print_current_dir();
+        } else {
+            run_command(args, search_paths, path_count);
         }
+        free(args);
+    }
 
-        else {
-            execute_command(args);
-            free(args);
-        }
+    // Free the memory allocated for the command history
+    for (int i = 0; i < history_index; i++) {
+        free(history[i]);
     }
-    for (int i = 0; i < history_count; i++) {
-        free(command_history[i]);
-    }
+
     return 0;
 }
