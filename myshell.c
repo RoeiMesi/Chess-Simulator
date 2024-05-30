@@ -24,9 +24,9 @@ void print_prompt() {
 // Function to change the current working directory
 void change_dir(char* path) {
     if (path == NULL) {
-        fprintf(stderr, "cd: argument required\n");
+        fprintf(stderr, "chdir failed: Bad address\n");
     } else if (chdir(path) != 0) {
-        perror("chdir error");
+        perror("chdir failed");
     }
 }
 
@@ -35,7 +35,7 @@ void add_history(char* cmd) {
     if (history_index < HISTORY_LIMIT) {
         history[history_index] = strdup(cmd);
         if (history[history_index] == NULL) {
-            perror("strdup error");
+            perror("strdup failed");
             exit(EXIT_FAILURE);
         }
         history_index++;
@@ -47,7 +47,7 @@ void add_history(char* cmd) {
         }
         history[HISTORY_LIMIT - 1] = strdup(cmd);
         if (history[HISTORY_LIMIT - 1] == NULL) {
-            perror("strdup error");
+            perror("strdup failed");
             exit(EXIT_FAILURE);
         }
     }
@@ -56,7 +56,7 @@ void add_history(char* cmd) {
 // Function to display the command history
 void show_history() {
     for (int i = 0; i < history_index; i++) {
-        printf("%d %s", i + 1, history[i]);
+        printf("%s", history[i]);
     }
 }
 
@@ -66,7 +66,7 @@ void print_current_dir() {
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
         printf("%s\n", cwd);
     } else {
-        perror("getcwd error");
+        perror("getcwd failed");
     }
 }
 
@@ -74,7 +74,7 @@ void print_current_dir() {
 char** tokenize_command(char* cmd) {
     char** args = malloc(MAX_ARGS * sizeof(char*));
     if (!args) {
-        perror("malloc error");
+        perror("malloc failed");
         exit(EXIT_FAILURE);
     }
     char* token;
@@ -93,7 +93,7 @@ char** tokenize_command(char* cmd) {
 void run_command(char** args, char** search_paths, int path_count) {
     pid_t pid = fork();
     if (pid < 0) {
-        perror("fork error");
+        perror("fork failed");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         execvp(args[0], args);
@@ -105,13 +105,13 @@ void run_command(char** args, char** search_paths, int path_count) {
             execv(cmd_path, args);
         }
 
-        perror("exec error");
+        perror("exec failed");
         exit(EXIT_FAILURE);
     } else {
         // Parent process waits for the child to complete
         int status;
         if (waitpid(pid, &status, 0) < 0) {
-            perror("waitpid error");
+            perror("waitpid failed");
         }
     }
 }

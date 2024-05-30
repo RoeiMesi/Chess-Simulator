@@ -75,10 +75,8 @@ handle_game() {
     show_chess_board
 
     while true; do
-        echo -n "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit: "
+        echo "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit: "
         read -rsn1 key
-        # Display the pressed key
-        echo "$key"
         if [[ $key == $'\e' ]]; then
             read -rsn2 key
             key="$key"

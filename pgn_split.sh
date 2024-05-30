@@ -47,11 +47,11 @@ split_pgn_file() {
     # This if statement is for the final game, because our while loop will exit before appending the final game into the output folder.
     if [[ -n $game_content ]]; then
         game_count=$((game_count + 1))
-        echo "$game_content" > "$output_dir/${base_name}_${game_count}.pgn"
+        echo -e "$game_content" > "$output_dir/${base_name}_${game_count}.pgn"
         echo "Saved game to $output_dir/${base_name}_${game_count}.pgn"
     fi
 
-    echo "All games have been split and saved into '$output_dir'."
+    echo "All games have been split and saved to '$output_dir'."
 }
 
 # Main script
