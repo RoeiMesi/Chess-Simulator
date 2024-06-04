@@ -31,11 +31,16 @@ split_pgn_file() {
     # Extract the base name of the input file without the extension
     base_name=$(basename "$input_file" .pgn)
 
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ "$line" == *$'\r' ]]; do
+            if [[ "$line" == *$'\r' ]]; then
+                line="${line%$'\r'}"
+            fi
         # This 'if' will stop once it sees a new [Event], meaning it needs to finish with the current event and proceed to the next one.
         if [[ $line == \[Event* && $line != \[EventDate* ]]; then
             if [[ -n $game_content ]]; then
                 game_count=$((game_count + 1))
+                # Remove the trailing newline character if present
+                game_content=$(echo -e "$game_content" | sed 's/\n$//')
                 echo -e "$game_content" > "$output_dir/${base_name}_${game_count}.pgn"
                 echo "Saved game to $output_dir/${base_name}_${game_count}.pgn"
                 game_content=""
@@ -47,12 +52,16 @@ split_pgn_file() {
     # This if statement is for the final game, because our while loop will exit before appending the final game into the output folder.
     if [[ -n $game_content ]]; then
         game_count=$((game_count + 1))
+        # Remove the trailing newline character if present
+        game_content=$(echo -e "$game_content" | sed 's/\n$//')
         echo -e "$game_content" > "$output_dir/${base_name}_${game_count}.pgn"
         echo "Saved game to $output_dir/${base_name}_${game_count}.pgn"
     fi
 
     echo "All games have been split and saved to '$output_dir'."
 }
+
+
 
 # Main script
 # If the number of arguments are not 2, print the usage message.

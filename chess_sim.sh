@@ -20,20 +20,25 @@ print_metadata() {
 extract_game_moves() {
     local moves_section=false
     local moves=""
-    while IFS= read -r line; do
-        if [ -z "$line" ]; then
-            moves_section=true
-            continue
-        fi
+    while IFS= read -r line || [ -n "$line" ]; do
         if $moves_section; then
-            if [[ "$line" == *"0-1"* || "$line" == *"1-0"* || "$line" == *"1/2-1/2"* ]]; then
+            # Check if the line contains a result marker and remove it
+            if [[ "$line" =~ (0-1|1-0|1/2-1/2) ]]; then
                 line=$(echo "$line" | sed -e 's/0-1//' -e 's/1-0//' -e 's/1\/2-1\/2//')
+                moves+="$line "
+                moves_section=false
+                continue
             fi
             moves+="$line "
+        elif [ -z "$line" ]; then
+            moves_section=true
         fi
     done < "$1"
+    # Trim trailing whitespace
+    moves=$(echo "$moves" | sed 's/[[:space:]]*$//')
     echo "$moves"
 }
+
 
 # Function to parse moves using a Python script
 parse_moves_python() {
@@ -63,7 +68,7 @@ show_chess_board() {
     echo "  a b c d e f g h"
     for ((i=0; i<8; i++)); do
         row=${board[i]}
-        echo "$((8-i)) $row  $((8-i))"
+        echo "$((8-i)) $row $((8-i))"
     done
     echo "  a b c d e f g h"
 }
