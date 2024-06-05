@@ -22,7 +22,7 @@ extract_game_moves() {
     local moves=""
     while IFS= read -r line || [ -n "$line" ]; do
         if $moves_section; then
-            # Check if the line contains a result marker and remove it
+            # Check if the line contains a result sign (win for white/black or tie) and remove it
             if [[ "$line" =~ (0-1|1-0|1/2-1/2) ]]; then
                 line=$(echo "$line" | sed -e 's/0-1//' -e 's/1-0//' -e 's/1\/2-1\/2//')
                 moves+="$line "
@@ -34,7 +34,7 @@ extract_game_moves() {
             moves_section=true
         fi
     done < "$1"
-    # Trim trailing whitespace
+    # Remove trailing whitespace
     moves=$(echo "$moves" | sed 's/[[:space:]]*$//')
     echo "$moves"
 }
@@ -79,13 +79,17 @@ handle_game() {
     initialize_chess_board
     show_chess_board
 
-    while true; do
-        echo "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit: "
-        read -rsn1 key
-        if [[ $key == $'\e' ]]; then
-            read -rsn2 key
-            key="$key"
-        fi
+        while true; do
+            # Print the prompt message without a newline at the end
+            echo -n "Press 'd' to move forward, 'a' to move back, 'w' to go to the start, 's' to go to the end, 'q' to quit:"
+            read key
+            echo ""
+            if [[ -z "$key" ]]; then 
+                read -rsn1 key
+            fi
+            # If a capital letter is entered, decapitalize it (like in the python code) and put into key variable.
+            key=$(echo "$key" | tr '[:upper:]' '[:lower:]')
+
         case $key in
             d)
                 if (( move_index < ${#moves[@]} )); then
@@ -151,28 +155,28 @@ move_piece() {
 
     # Handle castling moves
     # White king-side castling
-    if [[ "$from" == "e1" && "$to" == "g1" ]]; then
+    if [[ "$from" == "e1" && "$to" == "g1" && "$piece" == "K" ]]; then
         from_row[4]="."
         from_row[7]="."
         from_row[6]="K"
         from_row[5]="R"
         board[7]=$(IFS=' '; echo "${from_row[*]}")
     # White queen-side castling
-    elif [[ "$from" == "e1" && "$to" == "c1" ]]; then
+    elif [[ "$from" == "e1" && "$to" == "c1" && "$piece" == "K" ]]; then
         from_row[4]="."
         from_row[0]="."
         from_row[2]="K"
         from_row[3]="R"
         board[7]=$(IFS=' '; echo "${from_row[*]}")
     # Black king-side castling
-    elif [[ "$from" == "e8" && "$to" == "g8" ]]; then
+    elif [[ "$from" == "e8" && "$to" == "g8" && "$piece" == "k" ]]; then
         from_row[4]="."
         from_row[7]="."
         from_row[6]="k"
         from_row[5]="r"
         board[0]=$(IFS=' '; echo "${from_row[*]}")
     # Black queen-side castling
-    elif [[ "$from" == "e8" && "$to" == "c8" ]]; then
+    elif [[ "$from" == "e8" && "$to" == "c8" && "$piece" == "k" ]]; then
         from_row[4]="."
         from_row[0]="."
         from_row[2]="k"

@@ -32,11 +32,7 @@ split_pgn_file() {
     # Extract the base name of the input file without the extension
     base_name=$(basename "$input_file" .pgn)
 
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        if [[ "$line" == *$'\r' ]]; then
-            line="${line%$'\r'}"
-        fi
-
+    while IFS= read -r line; do
         # Detect the start of a new game
         if [[ "$line" == "[Event "* ]]; then
             if [[ -n $game_content ]]; then
