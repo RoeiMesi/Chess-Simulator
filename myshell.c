@@ -153,12 +153,14 @@ int main(int argc, char *argv[]) {
             run_command(args, search_paths, path_count);
         }
         free(args);
+        // If we reached the maximum amount of arguments acceptable (100), break out of the loop and exit.
+        if (history_index == MAX_ARGS) {
+            break;
+        }
     }
-
     // Free the memory allocated for the command history
     for (int i = 0; i < history_index; i++) {
         free(history[i]);
     }
-
     return 0;
 }
