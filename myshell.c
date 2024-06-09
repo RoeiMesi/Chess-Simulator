@@ -127,8 +127,8 @@ int main(int argc, char *argv[]) {
     ssize_t input_len;
     char** args;
 
-    // Array to hold paths passed as arguments
-    char* search_paths[MAX_ARGS] = {0};  // Initialize to NULL
+    // Array to hold paths passed as arguments, initialize to null.
+    char* search_paths[MAX_ARGS] = {0};
     int path_count = 0;
 
     // Store the provided directories in search_paths
