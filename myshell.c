@@ -1,4 +1,4 @@
-// Name: Roei Mesilaty, ID: 315253336
+// Name: Roei Mesilaty - ID: 315253336 - Exercise number: 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#define MAX_CMD_LEN 1024
 #define MAX_ARGS 100
 #define HISTORY_LIMIT 100
 
@@ -62,9 +61,10 @@ void show_history() {
 
 // Function to print the current working directory
 void print_current_dir() {
-    char cwd[MAX_CMD_LEN];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    char* cwd = getcwd(NULL, 0);
+    if (cwd != NULL) {
         printf("%s\n", cwd);
+        free(cwd);
     } else {
         perror("getcwd failed");
     }
@@ -72,7 +72,7 @@ void print_current_dir() {
 
 // Function to parse the input command into arguments
 char** tokenize_command(char* cmd) {
-    char** args = malloc(MAX_ARGS * sizeof(char*));
+    char** args = (char**) malloc(MAX_ARGS * sizeof(char*));
     if (!args) {
         perror("malloc failed");
         exit(EXIT_FAILURE);
@@ -100,9 +100,14 @@ void run_command(char** args, char** search_paths, int path_count) {
 
         // Search for the executable in custom paths
         for (int i = 0; i < path_count; i++) {
-            char cmd_path[MAX_CMD_LEN];
-            snprintf(cmd_path, sizeof(cmd_path), "%s/%s", search_paths[i], args[0]);
+            char* cmd_path = (char*) malloc(strlen(search_paths[i]) + strlen(args[0]) + 2);
+            if (!cmd_path) {
+                perror("malloc failed");
+                exit(EXIT_FAILURE);
+            }
+            snprintf(cmd_path, strlen(search_paths[i]) + strlen(args[0]) + 2, "%s/%s", search_paths[i], args[0]);
             execv(cmd_path, args);
+            free(cmd_path);
         }
 
         perror("exec failed");
@@ -117,21 +122,29 @@ void run_command(char** args, char** search_paths, int path_count) {
 }
 
 int main(int argc, char *argv[]) {
-    char input[MAX_CMD_LEN];
+    char* input = NULL;
+    size_t input_size = 0;
+    ssize_t input_len;
     char** args;
 
     // Array to hold paths passed as arguments
-    char* search_paths[MAX_ARGS];
+    char* search_paths[MAX_ARGS] = {0};  // Initialize to NULL
     int path_count = 0;
 
     // Store the provided directories in search_paths
     for (int i = 1; i < argc; i++) {
-        search_paths[path_count++] = argv[i];
+        if (path_count < MAX_ARGS) {
+            search_paths[path_count++] = argv[i];
+        } else {
+            fprintf(stderr, "Too many arguments provided\n");
+            exit(EXIT_FAILURE);
+        }
     }
 
     while (1) {
         print_prompt();
-        if (fgets(input, MAX_CMD_LEN, stdin) == NULL) break;
+        input_len = getline(&input, &input_size, stdin);
+        if (input_len == -1) break;
         if (strcmp(input, "\n") == 0) continue;
 
         add_history(input);
@@ -153,14 +166,18 @@ int main(int argc, char *argv[]) {
             run_command(args, search_paths, path_count);
         }
         free(args);
+
         // If we reached the maximum amount of arguments acceptable (100), break out of the loop and exit.
         if (history_index == MAX_ARGS) {
             break;
         }
     }
+
     // Free the memory allocated for the command history
     for (int i = 0; i < history_index; i++) {
         free(history[i]);
     }
+    free(input);
+
     return 0;
 }
