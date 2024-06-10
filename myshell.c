@@ -31,25 +31,12 @@ void change_dir(char* path) {
 
 // Function to add a command to the history
 void add_history(char* cmd) {
-    if (history_index < HISTORY_LIMIT) {
         history[history_index] = strdup(cmd);
         if (history[history_index] == NULL) {
             perror("strdup failed");
             exit(EXIT_FAILURE);
         }
         history_index++;
-    } else {
-        // Remove the oldest command when history is full
-        free(history[0]);
-        for (int i = 1; i < HISTORY_LIMIT; i++) {
-            history[i - 1] = history[i];
-        }
-        history[HISTORY_LIMIT - 1] = strdup(cmd);
-        if (history[HISTORY_LIMIT - 1] == NULL) {
-            perror("strdup failed");
-            exit(EXIT_FAILURE);
-        }
-    }
 }
 
 // Function to display the command history
@@ -168,7 +155,7 @@ int main(int argc, char *argv[]) {
         free(args);
 
         // If we reached the maximum amount of arguments acceptable (100), break out of the loop and exit.
-        if (history_index == MAX_ARGS) {
+        if (history_index == HISTORY_LIMIT) {
             break;
         }
     }
