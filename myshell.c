@@ -31,12 +31,12 @@ void change_dir(char* path) {
 
 // Function to add a command to the history
 void add_history(char* cmd) {
-        history[history_index] = strdup(cmd);
-        if (history[history_index] == NULL) {
-            perror("strdup failed");
-            exit(EXIT_FAILURE);
-        }
-        history_index++;
+    history[history_index] = strdup(cmd);
+    if (history[history_index] == NULL) {
+        perror("strdup failed");
+        exit(EXIT_FAILURE);
+    }
+    history_index++;
 }
 
 // Function to display the command history
