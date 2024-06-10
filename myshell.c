@@ -10,7 +10,7 @@
 #define HISTORY_LIMIT 100
 
 // Array to store history of commands
-char* history[HISTORY_LIMIT];
+char** history;
 // Number of commands stored in history
 int history_index = 0;
 
@@ -69,7 +69,12 @@ char** tokenize_command(char* cmd) {
 
     token = strtok(cmd, " \n");
     while (token != NULL && index < MAX_ARGS - 1) {
-        args[index++] = token;
+        args[index] = (char*) malloc((strlen(token) + 1) * sizeof(char));
+        if (!args[index]) {
+            perror("malloc failed");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(args[index++], token);
         token = strtok(NULL, " \n");
     }
     args[index] = NULL;
@@ -87,7 +92,7 @@ void run_command(char** args, char** search_paths, int path_count) {
 
         // Search for the executable in custom paths
         for (int i = 0; i < path_count; i++) {
-            char* cmd_path = (char*) malloc(strlen(search_paths[i]) + strlen(args[0]) + 2);
+            char* cmd_path = (char*) malloc((strlen(search_paths[i]) + strlen(args[0]) + 2) * sizeof(char));
             if (!cmd_path) {
                 perror("malloc failed");
                 exit(EXIT_FAILURE);
@@ -115,13 +120,29 @@ int main(int argc, char *argv[]) {
     char** args;
 
     // Array to hold paths passed as arguments, initialize to null.
-    char* search_paths[MAX_ARGS] = {0};
+    char** search_paths = (char**) malloc(MAX_ARGS * sizeof(char*));
+    if (!search_paths) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     int path_count = 0;
+
+    // Allocate memory for the history array
+    history = (char**) malloc(HISTORY_LIMIT * sizeof(char*));
+    if (!history) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
 
     // Store the provided directories in search_paths
     for (int i = 1; i < argc; i++) {
         if (path_count < MAX_ARGS) {
-            search_paths[path_count++] = argv[i];
+            search_paths[path_count] = (char*) malloc((strlen(argv[i]) + 1) * sizeof(char));
+            if (!search_paths[path_count]) {
+                perror("malloc failed");
+                exit(EXIT_FAILURE);
+            }
+            strcpy(search_paths[path_count++], argv[i]);
         } else {
             fprintf(stderr, "Too many arguments provided\n");
             exit(EXIT_FAILURE);
@@ -137,10 +158,16 @@ int main(int argc, char *argv[]) {
         add_history(input);
         args = tokenize_command(input);
         if (args[0] == NULL) {
+            for (int i = 0; args[i] != NULL; i++) {
+                free(args[i]);
+            }
             free(args);
             continue;
         }
         if (strcmp(args[0], "exit") == 0) {
+            for (int i = 0; args[i] != NULL; i++) {
+                free(args[i]);
+            }
             free(args);
             break;
         } else if (strcmp(args[0], "cd") == 0) {
@@ -151,6 +178,9 @@ int main(int argc, char *argv[]) {
             print_current_dir();
         } else {
             run_command(args, search_paths, path_count);
+        }
+        for (int i = 0; args[i] != NULL; i++) {
+            free(args[i]);
         }
         free(args);
 
@@ -164,7 +194,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < history_index; i++) {
         free(history[i]);
     }
+    free(history);
     free(input);
+
+    // Free the memory allocated for the search paths
+    for (int i = 0; i < path_count; i++) {
+        free(search_paths[i]);
+    }
+    free(search_paths);
 
     return 0;
 }
