@@ -1,6 +1,4 @@
 #!/bin/bash
-# Name: Roei Mesilaty
-# ID: 315253336
 
 print_usage_message() {
     echo "Usage: $0 <source_pgn_file> <destination_directory>"
