@@ -1,6 +1,4 @@
 #!/bin/bash
-# Name: Roei Mesilaty
-# ID: 315253336
 
 # Function to print the metadata from the PGN file
 print_metadata() {
